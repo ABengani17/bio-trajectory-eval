@@ -1,0 +1,8 @@
+model = "claude-sonnet-4-6"
+tier = "tier_2"
+max_turns = 8
+timeout_seconds = 60
+retries = 2
+scoring_backend = "rules"
+output_dir = "results"
+early_stop_on_refusal = true
