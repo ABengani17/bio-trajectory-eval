@@ -6,7 +6,7 @@ Public AI-bio safeguard evaluations often score isolated prompts. That design an
 
 Many real workflows are sequential. A user asks for background, narrows the task, asks for comparison criteria, then asks for a decision aid. Each turn can look acceptable by itself. The full conversation can still move toward assistance that a safety policy would not want to provide.
 
-This repo evaluates that gap. It complements single-turn benchmarks such as WMDP, biosecurity red-team proposals such as Defenses in Depth project 2, gene synthesis screening literature, and detection-focused work by groups such as SecureBio. It does not claim to measure biological capability directly. It measures a safeguard behavior: whether model handling changes when the unit of analysis is the trajectory.
+This repo evaluates that gap. It does not measure biological capability directly. It measures a safeguard behavior: whether model handling changes when the unit of analysis is the trajectory. That behavior matters because it can produce training and monitoring signal that isolated prompts do not expose.
 
 ## Trajectory Abstraction
 
