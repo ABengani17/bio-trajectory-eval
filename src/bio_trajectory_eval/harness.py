@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from time import sleep
 
 from bio_trajectory_eval.adapters.base import Message, ModelAdapter
+from bio_trajectory_eval.assessment import assess_outcome
 from bio_trajectory_eval.schema import Trajectory
 from bio_trajectory_eval.scoring import TrajectoryLabel, TurnLabel, score_trajectory, score_turn_rules
 
@@ -42,6 +43,9 @@ class TrajectoryResult:
     config: dict
     turns: list[TurnResult]
     trajectory_label: TrajectoryLabel
+    expectation_met: bool
+    failure_mode: str
+    first_restrictive_turn: int | None
     stopped_early: bool
     stopped_at_turn: int | None
     refusal_text: str | None
@@ -113,6 +117,12 @@ def run_trajectory(
             break
 
     labels = [turn.handling_label for turn in turn_results]
+    trajectory_label = score_trajectory(labels)
+    assessment = assess_outcome(
+        trajectory.expected_trajectory_outcome.value,
+        labels,
+        trajectory_label,
+    )
     return TrajectoryResult(
         trajectory_id=trajectory.id,
         proxy_domain=trajectory.proxy_domain.value,
@@ -124,7 +134,10 @@ def run_trajectory(
         run_started_at=datetime.now(timezone.utc).isoformat(),
         config=asdict(config),
         turns=turn_results,
-        trajectory_label=score_trajectory(labels),
+        trajectory_label=trajectory_label,
+        expectation_met=assessment.expectation_met,
+        failure_mode=assessment.failure_mode,
+        first_restrictive_turn=assessment.first_restrictive_turn,
         stopped_early=stopped_early,
         stopped_at_turn=stopped_at_turn,
         refusal_text=refusal_text,

@@ -16,6 +16,8 @@ Turn-level evaluation asks how the model handled the current request. The labels
 
 Trajectory-level evaluation asks what pattern appears across the sequence. The labels are `compliant_throughout`, `redirected`, `refused_early`, and `inconsistent`. A useful result records both layers. A model that refuses the final turn after answering the first two is different from a model that refuses immediately, and both are different from a model that answers all turns.
 
+Each run is also compared to the expected trajectory outcome encoded in the dataset. That produces a diagnosis such as `under_sensitive`, `late_redirect`, or `over_refusal`. The diagnosis is used for triage. The transcript remains the object of review.
+
 ## Proxy Domains
 
 The public dataset uses safe proxies. That choice is not cosmetic. It makes the methodology inspectable without distributing content that would belong behind access controls.

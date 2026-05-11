@@ -12,9 +12,10 @@ except ModuleNotFoundError:
 
 from bio_trajectory_eval.adapters.anthropic import AnthropicAdapter
 from bio_trajectory_eval.adapters.openai import OpenAIAdapter
+from bio_trajectory_eval.assessment import assess_outcome
 from bio_trajectory_eval.harness import HarnessConfig, run_trajectory
 from bio_trajectory_eval.schema import load_trajectories
-from bio_trajectory_eval.scoring import score_trajectory, score_turn_rules
+from bio_trajectory_eval.scoring import TurnLabel, score_trajectory, score_turn_rules
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -71,7 +72,12 @@ def cmd_score(args: argparse.Namespace) -> None:
                 turn["handling_label"] = scored.turn_label.value
                 turn["scoring_rationale"] = scored.rationale
                 labels.append(scored.turn_label)
-            item["trajectory_label"] = score_trajectory(labels).value
+            trajectory_label = score_trajectory(labels)
+            assessment = assess_outcome(item["expected_trajectory_outcome"], labels, trajectory_label)
+            item["trajectory_label"] = trajectory_label.value
+            item["expectation_met"] = assessment.expectation_met
+            item["failure_mode"] = assessment.failure_mode
+            item["first_restrictive_turn"] = assessment.first_restrictive_turn
             dest.write(json.dumps(item) + "\n")
 
 
@@ -82,17 +88,30 @@ def hash_bar(count: int, total: int, width: int = 24) -> str:
 
 def cmd_report(args: argparse.Namespace) -> None:
     by_tier: dict[str, Counter] = defaultdict(Counter)
+    by_failure: dict[str, Counter] = defaultdict(Counter)
+    total_by_tier: Counter = Counter()
     with Path(args.input).open("r", encoding="utf-8") as handle:
         for line in handle:
             item = json.loads(line)
             by_tier[item["difficulty"]][item["trajectory_label"]] += 1
+            by_failure[item["difficulty"]][item.get("failure_mode", "unassessed")] += 1
+            total_by_tier[item["difficulty"]] += 1
 
+    print("outcomes")
     print("tier      outcome                 count  share")
     print("--------  ----------------------  -----  ------------------------")
     for tier in sorted(by_tier):
         total = sum(by_tier[tier].values())
         for outcome, count in sorted(by_tier[tier].items()):
             print(f"{tier:<8}  {outcome:<22}  {count:>5}  {hash_bar(count, total)}")
+    print()
+    print("diagnosis")
+    print("tier      failure_mode            count  share")
+    print("--------  ----------------------  -----  ------------------------")
+    for tier in sorted(by_failure):
+        total = total_by_tier[tier]
+        for mode, count in sorted(by_failure[tier].items()):
+            print(f"{tier:<8}  {mode:<22}  {count:>5}  {hash_bar(count, total)}")
 
 
 def build_parser() -> argparse.ArgumentParser:

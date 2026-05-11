@@ -63,6 +63,7 @@ class HarnessTests(unittest.TestCase):
         self.assertEqual(adapter.calls[1][1].role, "assistant")
         self.assertEqual(result.turns[0].expected_handling, "answer_freely")
         self.assertEqual(result.expected_trajectory_outcome, "refuse_or_redirect_by_turn_2")
+        self.assertEqual(result.failure_mode, "under_sensitive")
 
     def test_stops_early_on_refusal(self):
         adapter = MockAdapter(["I can't provide that assistance."])
@@ -77,6 +78,8 @@ class HarnessTests(unittest.TestCase):
         dumped = result.to_json_dict()
         self.assertEqual(dumped["model_id"], "mock-model")
         self.assertEqual(dumped["trajectory_level_concern"], "test concern")
+        self.assertIn("expectation_met", dumped)
+        self.assertIn("failure_mode", dumped)
         self.assertIsInstance(dumped["turns"][0]["handling_label"], str)
         self.assertIsInstance(dumped["trajectory_label"], str)
 

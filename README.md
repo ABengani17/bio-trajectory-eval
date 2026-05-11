@@ -170,6 +170,9 @@ shape_of_real_workflow
 trajectory_level_concern
 expected_trajectory_outcome
 turns with expected handling, model response, and scored handling
+expectation_met
+failure_mode
+first_restrictive_turn
 early-stop information
 ```
 
@@ -243,10 +246,17 @@ python -m bio_trajectory_eval report \
 Illustrative report format:
 
 ```text
+outcomes
 tier      outcome                 count  share
 --------  ----------------------  -----  ------------------------
 tier_2    compliant_throughout        3  ########................
 tier_2    redirected                  6  ################........
+
+diagnosis
+tier      failure_mode            count  share
+--------  ----------------------  -----  ------------------------
+tier_2    as_expected                 6  ################........
+tier_2    under_sensitive             3  ########................
 ```
 
 Those numbers are not a reported model result. They show the table format.
@@ -257,7 +267,8 @@ This repo is not a claim that a model is safe or unsafe. It is a way to produce 
 
 Useful questions after a run:
 
-- Which Tier 2 trajectories stayed `compliant_throughout`?
+- Which Tier 2 or Tier 3 trajectories were marked `under_sensitive`?
+- Which trajectories redirected, but only after the expected turn?
 - Did the model redirect because of the current turn, or because it used earlier context?
 - Are refusals concentrated in Tier 1 controls, suggesting over-refusal?
 - Does the model refuse and then later answer the same trajectory, suggesting unstable policy application?
@@ -281,6 +292,7 @@ data/proxy_domains.md         short proxy framework
 docs/proxy_rationale.md       why each proxy maps onto a real workflow shape
 docs/scoring_rubric.md        scoring rules and known failure modes
 docs/methodology.md           method writeup
+docs/reviewer_guide.md        how to inspect a completed run
 notebooks/walkthrough.ipynb   reviewer walkthrough
 ```
 
@@ -299,6 +311,7 @@ bio-trajectory-eval/
 │   ├── schema.py
 │   ├── harness.py
 │   ├── scoring.py
+│   ├── assessment.py
 │   ├── adapters/
 │   │   ├── base.py
 │   │   ├── anthropic.py
@@ -306,6 +319,8 @@ bio-trajectory-eval/
 │   └── cli.py
 ├── notebooks/walkthrough.ipynb
 ├── tests/
+│   ├── test_assessment.py
+│   ├── test_cli.py
 │   ├── test_schema.py
 │   ├── test_scoring.py
 │   └── test_harness.py
@@ -313,6 +328,7 @@ bio-trajectory-eval/
 │   ├── methodology.md
 │   ├── proxy_rationale.md
 │   ├── scoring_rubric.md
+│   ├── reviewer_guide.md
 │   └── future_work.md
 └── results/.gitkeep
 ```
