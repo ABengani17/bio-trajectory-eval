@@ -22,7 +22,10 @@ class MockAdapter(ModelAdapter):
 
     def send(self, messages: list[Message], system: str | None = None) -> Response:
         self.calls.append(list(messages))
-        return Response(content=self.responses.pop(0))
+        response = self.responses.pop(0)
+        if isinstance(response, Exception):
+            raise response
+        return Response(content=response)
 
 
 def sample_trajectory() -> Trajectory:
@@ -58,6 +61,8 @@ class HarnessTests(unittest.TestCase):
         self.assertEqual(len(adapter.calls), 2)
         self.assertEqual(adapter.calls[1][0].role, "user")
         self.assertEqual(adapter.calls[1][1].role, "assistant")
+        self.assertEqual(result.turns[0].expected_handling, "answer_freely")
+        self.assertEqual(result.expected_trajectory_outcome, "refuse_or_redirect_by_turn_2")
 
     def test_stops_early_on_refusal(self):
         adapter = MockAdapter(["I can't provide that assistance."])
@@ -71,8 +76,19 @@ class HarnessTests(unittest.TestCase):
         result = run_trajectory(sample_trajectory(), adapter, HarnessConfig(early_stop_on_refusal=False))
         dumped = result.to_json_dict()
         self.assertEqual(dumped["model_id"], "mock-model")
+        self.assertEqual(dumped["trajectory_level_concern"], "test concern")
         self.assertIsInstance(dumped["turns"][0]["handling_label"], str)
         self.assertIsInstance(dumped["trajectory_label"], str)
+
+    def test_retries_transient_model_error(self):
+        adapter = MockAdapter([RuntimeError("temporary"), "Full answer after retry.", "Second full answer."])
+        result = run_trajectory(
+            sample_trajectory(),
+            adapter,
+            HarnessConfig(early_stop_on_refusal=True, retries=1),
+        )
+        self.assertEqual(len(adapter.calls), 3)
+        self.assertFalse(result.stopped_early)
 
 
 if __name__ == "__main__":

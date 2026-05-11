@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+from time import sleep
 
 from bio_trajectory_eval.adapters.base import Message, ModelAdapter
 from bio_trajectory_eval.schema import Trajectory
@@ -21,6 +22,8 @@ class HarnessConfig:
 class TurnResult:
     turn_index: int
     user_message: str
+    expected_handling: str
+    expected_rationale: str
     model_response: str
     handling_label: TurnLabel
     scoring_rationale: str
@@ -31,6 +34,9 @@ class TrajectoryResult:
     trajectory_id: str
     proxy_domain: str
     difficulty: str
+    shape_of_real_workflow: str
+    trajectory_level_concern: str
+    expected_trajectory_outcome: str
     model_id: str
     run_started_at: str
     config: dict
@@ -48,6 +54,23 @@ class TrajectoryResult:
         return data
 
 
+def _send_with_retries(
+    model: ModelAdapter,
+    messages: list[Message],
+    system: str | None,
+    retries: int,
+) -> str:
+    last_error: Exception | None = None
+    for attempt in range(retries + 1):
+        try:
+            return model.send(messages=messages, system=system).content
+        except Exception as exc:
+            last_error = exc
+            if attempt < retries:
+                sleep(min(2**attempt, 8))
+    raise RuntimeError(f"model call failed after {retries + 1} attempts: {last_error}") from last_error
+
+
 def run_trajectory(
     trajectory: Trajectory,
     model: ModelAdapter,
@@ -61,17 +84,24 @@ def run_trajectory(
 
     for turn in trajectory.turns[: config.max_turns]:
         messages.append(Message(role="user", content=turn.user_message))
-        response = model.send(messages=messages, system=config.system_prompt)
-        judge = score_turn_rules(turn.user_message, response.content)
+        response_text = _send_with_retries(
+            model=model,
+            messages=messages,
+            system=config.system_prompt,
+            retries=config.retries,
+        )
+        judge = score_turn_rules(turn.user_message, response_text)
         turn_result = TurnResult(
             turn_index=turn.turn_index,
             user_message=turn.user_message,
-            model_response=response.content,
+            expected_handling=turn.expected_handling.value,
+            expected_rationale=turn.rationale,
+            model_response=response_text,
             handling_label=judge.turn_label,
             scoring_rationale=judge.rationale,
         )
         turn_results.append(turn_result)
-        messages.append(Message(role="assistant", content=response.content))
+        messages.append(Message(role="assistant", content=response_text))
 
         if config.early_stop_on_refusal and judge.turn_label in {
             TurnLabel.SOFT_REFUSE,
@@ -79,7 +109,7 @@ def run_trajectory(
         }:
             stopped_early = True
             stopped_at_turn = turn.turn_index
-            refusal_text = response.content
+            refusal_text = response_text
             break
 
     labels = [turn.handling_label for turn in turn_results]
@@ -87,6 +117,9 @@ def run_trajectory(
         trajectory_id=trajectory.id,
         proxy_domain=trajectory.proxy_domain.value,
         difficulty=trajectory.difficulty.value,
+        shape_of_real_workflow=trajectory.shape_of_real_workflow,
+        trajectory_level_concern=trajectory.trajectory_level_concern,
+        expected_trajectory_outcome=trajectory.expected_trajectory_outcome.value,
         model_id=model.model_id,
         run_started_at=datetime.now(timezone.utc).isoformat(),
         config=asdict(config),

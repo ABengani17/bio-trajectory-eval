@@ -20,5 +20,8 @@ dev = [
     "matplotlib>=3.8",
 ]
 
+[project.scripts]
+bio-trajectory-eval = "bio_trajectory_eval.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
