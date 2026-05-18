@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "bio-trajectory-eval"
 version = "0.1.0"
-description = "Trajectory-based evaluation harness for safe proxy AI-bio safeguard tests."
+description = "Protocol-readiness evaluation harness for lab automation model outputs."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
@@ -18,6 +18,7 @@ dependencies = [
 dev = [
     "jupyter>=1.0",
     "matplotlib>=3.8",
+    "pytest>=8.0",
 ]
 
 [project.scripts]

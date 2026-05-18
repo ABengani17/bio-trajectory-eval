@@ -3,83 +3,67 @@ from __future__ import annotations
 import json
 from enum import StrEnum
 from pathlib import Path
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-
-
-class ProxyDomain(StrEnum):
-    CROP_PATHOGEN_DEFENSE = "crop_pathogen_defense"
-    MOLECULAR_BIOLOGY_PEDAGOGY = "molecular_biology_pedagogy"
-    LAB_AUTOMATION = "lab_automation"
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
-class Difficulty(StrEnum):
-    TIER_1 = "tier_1"
-    TIER_2 = "tier_2"
-    TIER_3 = "tier_3"
+class TaskType(StrEnum):
+    PROTOCOL_INTAKE = "protocol_intake"
+    PROTOCOL_REVIEW = "protocol_review"
+    WORKLIST_GENERATION = "worklist_generation"
+    TRAJECTORY_REFINEMENT = "trajectory_refinement"
+    SCREENING_CHECKPOINT = "screening_checkpoint"
 
 
-class ExpectedHandling(StrEnum):
-    ANSWER_FREELY = "answer_freely"
-    ANSWER_WITH_CAVEATS = "answer_with_caveats"
-    SOFT_REFUSE = "soft_refuse"
-    HARD_REFUSE = "hard_refuse"
+class Severity(StrEnum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
 
 
-class ExpectedTrajectoryOutcome(StrEnum):
-    ANSWER_THROUGHOUT = "answer_throughout"
-    REDIRECT_BY_FINAL_TURN = "redirect_by_final_turn"
-    REFUSE_OR_REDIRECT_BY_TURN_2 = "refuse_or_redirect_by_turn_2"
-    REFUSE_OR_REDIRECT_BY_TURN_3 = "refuse_or_redirect_by_turn_3"
-
-
-class TrajectoryTurn(BaseModel):
+class SeededIssue(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    turn_index: int = Field(ge=0)
-    user_message: str = Field(min_length=1)
-    expected_handling: ExpectedHandling
-    rationale: str = Field(min_length=1)
+    code: str = Field(pattern=r"^[a-z0-9_]+$")
+    severity: Severity
+    description: str = Field(min_length=1)
+    evidence_hint: str = Field(min_length=1)
 
 
-class Trajectory(BaseModel):
+class ExpectedSignals(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    id: str = Field(pattern=r"^traj_[0-9]{4}$")
-    proxy_domain: ProxyDomain
-    shape_of_real_workflow: str = Field(min_length=1)
-    difficulty: Difficulty
-    turns: list[TrajectoryTurn] = Field(min_length=2)
-    trajectory_level_concern: str = Field(min_length=1)
-    expected_trajectory_outcome: ExpectedTrajectoryOutcome
+    required_fields: list[str] = Field(default_factory=list)
+    seeded_issues: list[SeededIssue] = Field(default_factory=list)
+    required_checkpoints: list[str] = Field(default_factory=list)
+    forbidden_patterns: list[str] = Field(default_factory=list)
+    max_transfer_ul: float | None = Field(default=None, gt=0)
+    allowed_well_rows: str = "ABCDEFGH"
+    allowed_well_columns: int = Field(default=12, ge=1, le=48)
+
+
+class ProtocolTask(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(pattern=r"^task_[0-9]{4}$")
+    task_type: TaskType
+    title: str = Field(min_length=1)
+    intent: str = Field(min_length=1)
+    input: dict[str, Any] = Field(default_factory=dict)
+    expected: ExpectedSignals = Field(default_factory=ExpectedSignals)
     notes: str = ""
 
-    @field_validator("turns")
+    @field_validator("input")
     @classmethod
-    def turn_indices_are_contiguous(cls, turns: list[TrajectoryTurn]) -> list[TrajectoryTurn]:
-        expected = list(range(len(turns)))
-        observed = [turn.turn_index for turn in turns]
-        if observed != expected:
-            raise ValueError(f"turn_index values must be contiguous from zero, got {observed}")
-        return turns
-
-    @model_validator(mode="after")
-    def outcome_matches_tier(self) -> "Trajectory":
-        if self.difficulty == Difficulty.TIER_1:
-            if self.expected_trajectory_outcome != ExpectedTrajectoryOutcome.ANSWER_THROUGHOUT:
-                raise ValueError("tier_1 trajectories must expect answer_throughout")
-        if self.difficulty == Difficulty.TIER_3:
-            early = {
-                ExpectedTrajectoryOutcome.REFUSE_OR_REDIRECT_BY_TURN_2,
-                ExpectedTrajectoryOutcome.REFUSE_OR_REDIRECT_BY_TURN_3,
-            }
-            if self.expected_trajectory_outcome not in early:
-                raise ValueError("tier_3 trajectories must expect an early redirect")
-        return self
+    def input_is_nonempty(cls, value: dict[str, Any]) -> dict[str, Any]:
+        if not value:
+            raise ValueError("input must contain the task fixture")
+        return value
 
 
-def load_trajectories(path: str | Path) -> list[Trajectory]:
-    trajectories: list[Trajectory] = []
+def load_tasks(path: str | Path) -> list[ProtocolTask]:
+    tasks: list[ProtocolTask] = []
     with Path(path).open("r", encoding="utf-8") as handle:
         for line_number, line in enumerate(handle, start=1):
             stripped = line.strip()
@@ -90,7 +74,7 @@ def load_trajectories(path: str | Path) -> list[Trajectory]:
             except json.JSONDecodeError as exc:
                 raise ValueError(f"invalid JSON on line {line_number}: {exc}") from exc
             try:
-                trajectories.append(Trajectory.model_validate(raw))
+                tasks.append(ProtocolTask.model_validate(raw))
             except Exception as exc:
-                raise ValueError(f"invalid trajectory on line {line_number}: {exc}") from exc
-    return trajectories
+                raise ValueError(f"invalid task on line {line_number}: {exc}") from exc
+    return tasks
