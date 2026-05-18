@@ -1,0 +1,33 @@
+{
+  "id": "pkg_env_001",
+  "name": "Unknown environmental sample queue",
+  "platform": "worklist",
+  "metadata": {
+    "protocol_name": "Environmental sample queue"
+  },
+  "samples": [
+    {
+      "id": "soil_extract_a",
+      "name": "Soil extract A",
+      "material_type": "environmental_sample",
+      "source": "external collaborator",
+      "provenance_id": "",
+      "screening_status": "not_required",
+      "biosafety_review_id": "",
+      "biosafety_level": 1,
+      "external": true
+    }
+  ],
+  "transfers": [
+    {
+      "sample_id": "soil_extract_a",
+      "source_well": "A1",
+      "dest_well": "B1",
+      "volume_ul": 50
+    }
+  ],
+  "controls": [],
+  "approvals": [],
+  "decontamination_plan": "",
+  "notes": "Should route to review because provenance and biosafety metadata are absent."
+}

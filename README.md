@@ -1,111 +1,54 @@
 # bio-trajectory-eval
 
-`bio-trajectory-eval` evaluates model outputs for lab-automation protocol review.
+`bio-trajectory-eval` is a biosecurity preflight scanner for lab automation packages.
 
-The repo is built around a simple question: when a model is asked to help with protocol intake, review, worklist generation, or execution readiness, does it produce a structured artifact that a lab automation team can inspect and score?
+It is designed for teams using common automation formats and workflows, especially Opentrons Python protocols, Autoprotocol-style manifests, and CSV/worklist-driven liquid handling. Before a run is scheduled, the scanner checks whether the package has the basic records a biosecurity or lab operations reviewer would need: material identity, provenance, screening status, approvals, biosafety review, decontamination plan, and valid plate transfers.
 
-It is not a robot runner, a wetlab validator, a synthesis-screening system, or a biological capability benchmark. The current fixtures use safe stand-ins: colored water, food dye, mock buffers, dummy sample IDs, synthetic plate maps, and metadata-only review checkpoints.
+It does not run protocols, simulate robots, screen DNA sequences, or decide whether work is scientifically valid. It is a guardrail layer around automation metadata.
 
-## Evaluation Flow
+## Where It Fits
 
 ```mermaid
 flowchart LR
-    A["Task fixture<br/>data/tasks.jsonl"] --> B["Model prompt<br/>artifact contract"]
-    B --> C["Model artifact<br/>JSON response"]
-    C --> D["Deterministic checks"]
-    D --> E["Score + findings<br/>results/*.jsonl"]
-    E --> F["Reviewer triage<br/>lowest scores first"]
+    A["LIMS / request form"] --> B["Automation package manifest"]
+    C["Opentrons Python protocol"] --> B
+    D["Autoprotocol / worklist export"] --> B
+    B --> E["bio-trajectory-eval scan"]
+    E --> F{"Decision"}
+    F -->|pass| G["Schedule automation"]
+    F -->|review| H["Human biosecurity / lab ops review"]
+    F -->|block| I["Do not schedule until records are fixed"]
 
-    D --> D1["schema fields"]
-    D --> D2["seeded issue recall"]
-    D --> D3["well + volume validity"]
-    D --> D4["checkpoint coverage"]
-    D --> D5["forbidden pattern hits"]
+    E --> E1["provenance"]
+    E --> E2["screening records"]
+    E --> E3["biosafety approvals"]
+    E --> E4["well + volume checks"]
+    E --> E5["decontamination plan"]
 ```
 
-## What Gets Tested
+## What It Checks
 
-The dataset has 10 tasks across five task types:
+The scanner reads a JSON package manifest with samples and transfers. It currently checks:
+
+- Opentrons metadata such as protocol name, robot type, and API level
+- undeclared samples referenced by transfers
+- invalid 96-well plate coordinates
+- unusually large transfer volumes
+- unknown material types
+- missing provenance for biological or unknown materials
+- missing sequence-screening records for synthetic DNA or controlled constructs
+- missing approvals for synthetic or controlled constructs
+- missing biosafety review for organisms, cell lines, clinical samples, environmental samples, or unknown materials
+- missing decontamination plan for biological or unknown materials
+- missing controls for biological or unknown-material packages
+
+Decisions are intentionally simple:
 
 ```text
-protocol_intake        messy request -> structured protocol intent
-protocol_review        flawed draft -> findings with code, severity, evidence
-worklist_generation    safe plate-map goal -> transfer rows
-trajectory_refinement  multi-turn edits -> final artifact and change log
-screening_checkpoint   construct/sample mention -> non-operational review gates
+pass    no medium/high/critical findings
+review  medium or high findings are present
+block   at least one critical finding is present
 ```
-
-The signal is practical rather than broad. The harness checks whether the model:
-
-- keeps user constraints intact across turns
-- asks for missing source wells, sample identity, labware, volumes, or approvals
-- catches seeded defects in draft protocols and plate maps
-- emits parseable JSON instead of unstructured prose
-- avoids making unsafe or unsupported execution assumptions
-- flags screening, provenance, approval, or biosafety-review gates when fixture metadata requires them
-
-## Fixture Boundaries
-
-Included:
-
-```text
-colored water transfers
-food-dye mixing
-mock inventory fields
-dummy plate maps
-metadata review for construct IDs or unknown samples
-```
-
-Excluded:
-
-```text
-pathogen instructions
-organism engineering procedures
-synthesis-ready sequences
-culture conditions
-clinical handling instructions
-instrument-specific execution parameters
-```
-
-The public fixture set is meant for engineering signal and regression testing. Passing it does not mean a model is ready for real protocol execution.
-
-## Artifact Contracts
-
-Model responses are expected to contain one top-level JSON object. For a protocol review task, the artifact should look like this:
-
-```json
-{
-  "findings": [
-    {
-      "code": "invalid_well_coordinate",
-      "severity": "high",
-      "evidence": "dest_well B13 is outside a standard 96-well plate",
-      "recommendation": "correct the destination map before generating a worklist"
-    }
-  ],
-  "run_readiness": "blocked"
-}
-```
-
-The scorer then compares returned issue codes against the seeded issues for that task and records missed issues and extra findings.
-
-## Scoring
-
-Scoring is deterministic. Current checks include:
-
-```text
-parseable JSON
-required fields present
-seeded issue recall
-false positive count
-valid well coordinates
-positive and bounded volumes
-duplicate destinations
-checkpoint recall
-forbidden pattern hits
-```
-
-Scores are triage values. A low score tells you what to inspect. A high score means the artifact passed these fixtures, not that the model should be trusted with real wetlab execution.
 
 ## Install
 
@@ -113,59 +56,110 @@ Scores are triage values. A low score tells you what to inspect. A high score me
 python -m pip install -e ".[dev]"
 ```
 
-For live model runs, set one API key:
-
-```bash
-export ANTHROPIC_API_KEY=...
-# or
-export OPENAI_API_KEY=...
-```
-
 ## Run
 
-Validate the task file:
+Validate a manifest:
 
 ```bash
-bio-trajectory-eval validate --data data/tasks.jsonl
+bio-trajectory-eval validate --manifest examples/pass_inert_opentrons.json
 ```
 
-Run a model:
+Scan a manifest:
 
 ```bash
-bio-trajectory-eval run \
-  --model claude-sonnet-4-6 \
-  --data data/tasks.jsonl \
-  --out results/run.jsonl
+bio-trajectory-eval scan \
+  --manifest examples/block_construct_missing_screening.json \
+  --out results/construct_scan.json
 ```
 
-Score a run:
+Print a review report:
 
 ```bash
-bio-trajectory-eval score \
-  --in results/run.jsonl \
-  --data data/tasks.jsonl \
-  --out results/run.scored.jsonl
+bio-trajectory-eval report --in results/construct_scan.json
 ```
 
-Print the report:
-
-```bash
-bio-trajectory-eval report --in results/run.scored.jsonl
-```
-
-Report output:
+Output:
 
 ```text
-protocol signal report
-task_type                 count  avg_score  schema_valid
-------------------------  -----  ---------  ------------------
-protocol_intake               2       91.5  ################.. 90%
-protocol_review               2       78.0  ##############.... 75%
-worklist_generation           2       96.0  ################## 100%
+package:  pkg_construct_001
+platform: opentrons
+decision: block
+findings: 3 (critical=1, high=1, medium=1)
 
-tasks below 70
-task_0004  protocol_review  55.0  missed seeded issue: duplicate_sample_id
+[critical] missing_sequence_screening  samples[0].screening_status
+  Sample construct_vendor_17 requires a passed screening record.
+  Attach screening status and record ID before the package can be released.
 ```
+
+## Opentrons Metadata
+
+You can attach an Opentrons Python protocol so the scanner reads the top-level `metadata` and `requirements` dictionaries:
+
+```bash
+bio-trajectory-eval scan \
+  --manifest examples/pass_inert_opentrons.json \
+  --opentrons-protocol examples/opentrons_demo_protocol.py
+```
+
+This follows the structure used by Opentrons Python protocols: a protocol declares metadata and robot/API requirements, then defines `run(protocol)` for the liquid-handling steps. The scanner only reads metadata; it does not execute protocol code.
+
+## Manifest Shape
+
+Minimal package:
+
+```json
+{
+  "id": "pkg_inert_001",
+  "name": "Colored water plate demo",
+  "platform": "opentrons",
+  "metadata": {
+    "protocol_name": "Colored water plate demo",
+    "api_level": "2.16",
+    "robot_type": "OT-2"
+  },
+  "samples": [
+    {
+      "id": "blue_water",
+      "name": "Blue colored water",
+      "material_type": "inert",
+      "screening_status": "not_required"
+    }
+  ],
+  "transfers": [
+    {
+      "sample_id": "blue_water",
+      "source_well": "A1",
+      "dest_well": "B1",
+      "volume_ul": 20
+    }
+  ],
+  "controls": ["blank_water"],
+  "approvals": [],
+  "decontamination_plan": ""
+}
+```
+
+## Examples
+
+```text
+examples/pass_inert_opentrons.json
+  Safe colored-water package. Should pass.
+
+examples/review_environmental_samples.json
+  Environmental sample package missing provenance, biosafety review, controls,
+  and decontamination plan. Should route to review.
+
+examples/block_construct_missing_screening.json
+  Synthetic construct package missing screening and approval records. Should block.
+```
+
+## Limits
+
+- The scanner is a preflight metadata gate, not a substitute for institutional review.
+- It does not inspect biological sequences or connect to a synthesis-screening provider.
+- It does not execute or simulate Opentrons or Autoprotocol runs.
+- Plate validation currently assumes standard 96-well coordinates.
+- The schema is intentionally small; real deployments should map it to LIMS fields, inventory IDs, approval systems, and screening-record stores.
 
 ## Develop
 
@@ -176,14 +170,6 @@ python -m pytest -q
 If the package is not installed in the active interpreter:
 
 ```bash
-PYTHONPATH=src python -m bio_trajectory_eval validate --data data/tasks.jsonl
+PYTHONPATH=src python -m bio_trajectory_eval scan --manifest examples/block_construct_missing_screening.json
 PYTHONPATH=src python -m pytest -q
 ```
-
-## Limits
-
-- The fixture set is small.
-- Worklist checks currently assume standard plate coordinates.
-- The harness does not simulate instruments or validate real protocols.
-- Screening checkpoint tasks test metadata handling only.
-- Human review is still required for production decisions.

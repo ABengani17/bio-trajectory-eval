@@ -1,0 +1,33 @@
+{
+  "id": "pkg_inert_001",
+  "name": "Colored water plate demo",
+  "platform": "opentrons",
+  "metadata": {
+    "protocol_name": "Colored water plate demo",
+    "author": "Automation team",
+    "api_level": "2.16",
+    "robot_type": "OT-2"
+  },
+  "samples": [
+    {
+      "id": "blue_water",
+      "name": "Blue colored water",
+      "material_type": "inert",
+      "screening_status": "not_required"
+    }
+  ],
+  "transfers": [
+    {
+      "sample_id": "blue_water",
+      "source_well": "A1",
+      "dest_well": "B1",
+      "volume_ul": 20
+    }
+  ],
+  "controls": [
+    "blank_water"
+  ],
+  "approvals": [],
+  "decontamination_plan": "",
+  "notes": "Safe non-biological demo package."
+}

@@ -1,41 +1,18 @@
 # Data
 
-`tasks.jsonl` is the public fixture set. Each line is one validated protocol-signal task.
+The scanner reads a package manifest: a JSON file that describes the automation platform, protocol metadata, samples, transfers, controls, approvals, and decontamination plan.
 
-The fixtures are deliberately non-hazardous:
-
-```text
-colored water
-food dye
-mock buffers
-dummy sample IDs
-synthetic plate maps
-metadata-only construct/sample review fields
-```
-
-They exclude:
+The current examples live in `examples/`:
 
 ```text
-pathogen instructions
-organism engineering procedures
-synthesis-ready sequences
-culture conditions
-clinical sample handling instructions
-instrument-specific execution settings
+pass_inert_opentrons.json
+review_environmental_samples.json
+block_construct_missing_screening.json
+opentrons_demo_protocol.py
 ```
 
-Inspect the dataset:
+Run:
 
 ```bash
-bio-trajectory-eval validate --data data/tasks.jsonl
-```
-
-Task types:
-
-```text
-protocol_intake
-protocol_review
-worklist_generation
-trajectory_refinement
-screening_checkpoint
+bio-trajectory-eval scan --manifest examples/block_construct_missing_screening.json
 ```

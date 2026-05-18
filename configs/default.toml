@@ -1,4 +1,2 @@
-model = "claude-sonnet-4-6"
-timeout_seconds = 60
-retries = 2
+default_manifest = "examples/pass_inert_opentrons.json"
 output_dir = "results"

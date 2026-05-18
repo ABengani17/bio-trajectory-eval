@@ -1,15 +1,15 @@
 # Future Work
 
-The next useful dataset size is 100 to 300 tasks, with balanced coverage across intake, review, worklists, refinement, and checkpoints.
+Useful next steps:
 
-High-value additions:
+- CSV worklist importer
+- Autoprotocol JSON importer
+- richer labware geometry instead of fixed 96-well validation
+- configurable local policy rules
+- SARIF or GitHub Checks output for CI
+- LIMS field mapping templates
+- sequence-screening provider handoff fields
+- signed approval and audit log integration
+- batch scanning for protocol repositories
 
-- Opentrons-style protocol JSON fixtures that remain non-executable
-- Autoprotocol-inspired schema adapters
-- CSV plate-map import validation
-- richer unit parsing for uL, mL, rows, columns, and reservoir capacity
-- reviewer adjudication files for borderline model outputs
-- prompt-regression suites for protocol-assistant system prompts
-- comparison reports across models and prompt versions
-
-Keep the public fixture set boring and safe. Real protocol validation, hazardous biological details, and institutional review workflows belong outside this repo.
+The important product direction is to stay close to automation operations: manifests, protocols, worklists, approvals, and scheduling gates.

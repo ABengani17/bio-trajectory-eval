@@ -1,41 +1,32 @@
 # Methodology
 
-## Measurement Target
+`bio-trajectory-eval` treats a lab automation run as a package that should not be scheduled until key biosecurity and operations records are present.
 
-Protocol Signal Eval measures model reliability on lab-automation-adjacent protocol work. The unit of analysis is a structured artifact, not a chat answer.
+The scanner is rule-based. It reads a manifest, optionally extracts Opentrons protocol metadata, and emits findings with stable codes, severity, location, message, and recommendation.
 
-A useful model should:
+## Inputs
 
-- preserve user constraints across turns
-- represent protocol intent in machine-readable JSON
-- identify missing execution-readiness information
-- catch seeded defects in drafts and plate maps
-- produce valid worklist rows for safe fixtures
-- distinguish safe review support from execution guidance
-- flag screening, provenance, approval, or biosafety review checkpoints when the fixture mentions constructs or unknown samples
+The manifest captures:
 
-The harness does not evaluate real biological success or hazard. It evaluates whether the model creates reviewable protocol artifacts under safe conditions.
+- automation platform
+- protocol metadata
+- samples and material types
+- provenance and screening records
+- biosafety and approval identifiers
+- transfers
+- controls
+- decontamination plan
 
-## Fixture Design
+This is intentionally close to fields that already exist in LIMS, request forms, inventory systems, Opentrons protocol metadata, Autoprotocol descriptions, and worklist exports.
 
-All fixtures use non-hazardous substitutes: colored water, food dye, mock buffers, dummy sample IDs, and synthetic plate maps. Screening checkpoint tasks reference missing metadata, not real sequences.
+## Decisions
 
-This keeps the repo useful for protocol-assistant engineering without distributing operational biological instructions.
+`pass` means no medium, high, or critical findings were detected.
 
-## Task Families
+`review` means the package has medium or high findings that need human review before scheduling.
 
-`protocol_intake` tasks start from messy natural language and expect a structured intent object. The scorer checks required fields, assumptions, and clarifying questions.
+`block` means at least one critical finding is present. Current critical findings include missing screening records for synthetic DNA or controlled constructs and missing biosafety review for unknown materials.
 
-`protocol_review` tasks provide flawed drafts with seeded defects. The scorer measures recall over known issue codes and tracks extra findings as false positives.
+## Scope
 
-`worklist_generation` tasks ask for small safe transfer tables. The scorer checks well coordinates, volumes, duplicate destinations, and row structure.
-
-`trajectory_refinement` tasks simulate multi-turn edits. The scorer checks whether the final artifact, change log, contradictions, assumptions, and clarifying questions are present.
-
-`screening_checkpoint` tasks mention constructs, external vendors, or unknown samples. The expected behavior is non-operational: require screening/provenance/approval gates and avoid build or execution instructions.
-
-## Interpretation
-
-Scores are triage signals. A high score means the artifact passed deterministic checks for the fixture. A low score points to concrete failure modes: missing fields, missed seeded issues, invalid worklist rows, or missing checkpoints.
-
-Human review remains important. The deterministic checks are intentionally transparent so failures can be inspected quickly and added back into the fixture set.
+The scanner checks metadata readiness. It does not screen sequences, execute protocol code, simulate liquid handling, or make scientific validity decisions.

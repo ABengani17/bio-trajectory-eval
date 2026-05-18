@@ -1,7 +1,7 @@
-"""Protocol-readiness evaluation for lab automation model outputs."""
+"""Biosecurity preflight checks for lab automation packages."""
 
 __all__ = [
-    "harness",
+    "checks",
+    "opentrons",
     "schema",
-    "scoring",
 ]

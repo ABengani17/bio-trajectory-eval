@@ -1,0 +1,39 @@
+{
+  "id": "pkg_construct_001",
+  "name": "Construct transfer package missing screening",
+  "platform": "opentrons",
+  "metadata": {
+    "protocol_name": "Construct transfer package",
+    "author": "Automation team",
+    "api_level": "2.16",
+    "robot_type": "Flex"
+  },
+  "samples": [
+    {
+      "id": "construct_vendor_17",
+      "name": "External synthetic construct",
+      "material_type": "synthetic_dna",
+      "source": "external vendor",
+      "provenance_id": "vendor-order-17",
+      "screening_status": "missing",
+      "screening_record_id": "",
+      "approval_id": "",
+      "biosafety_level": 1,
+      "external": true
+    }
+  ],
+  "transfers": [
+    {
+      "sample_id": "construct_vendor_17",
+      "source_well": "A1",
+      "dest_well": "B13",
+      "volume_ul": 10
+    }
+  ],
+  "controls": [
+    "blank"
+  ],
+  "approvals": [],
+  "decontamination_plan": "Dispose according to local DNA waste SOP.",
+  "notes": "Should block because sequence screening and construct approval are missing."
+}
