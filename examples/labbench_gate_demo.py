@@ -26,7 +26,7 @@ class AutomationRack(lb.Rack):
 
 
 if __name__ == "__main__":
-    manifest = ROOT / "examples" / "pass_inert_opentrons.json"
+    manifest = ROOT / "examples" / "inert_dye_run.json"
     with AutomationRack() as rack:
         rack.preflight(manifest)
         print(rack.run_liquid_handler())

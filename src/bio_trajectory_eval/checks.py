@@ -278,6 +278,7 @@ def scan_package(package: AutomationPackage, policy: Policy | None = None) -> Sc
     summary = ScanSummary(
         package_id=package.id,
         platform=package.platform,
+        policy_name=policy.name,
         decision=decision_for(findings, policy),
         finding_count=len(findings),
         critical_count=counts[Severity.CRITICAL],

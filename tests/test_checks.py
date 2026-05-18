@@ -14,12 +14,12 @@ class ChecksTests(unittest.TestCase):
         return scan_package(load_package(ROOT / "examples" / name))
 
     def test_inert_package_passes(self):
-        result = self.scan("pass_inert_opentrons.json")
+        result = self.scan("inert_dye_run.json")
         self.assertEqual(result.summary.decision, Decision.PASS)
         self.assertEqual(result.summary.finding_count, 0)
 
     def test_environmental_samples_route_to_review(self):
-        result = self.scan("review_environmental_samples.json")
+        result = self.scan("environmental_sample_review.json")
         codes = {finding.code for finding in result.findings}
         self.assertEqual(result.summary.decision, Decision.REVIEW)
         self.assertIn("missing_provenance", codes)
@@ -27,7 +27,7 @@ class ChecksTests(unittest.TestCase):
         self.assertIn("missing_decontamination_plan", codes)
 
     def test_missing_construct_screening_blocks(self):
-        result = self.scan("block_construct_missing_screening.json")
+        result = self.scan("construct_screening_hold.json")
         codes = {finding.code for finding in result.findings}
         self.assertEqual(result.summary.decision, Decision.BLOCK)
         self.assertIn("missing_sequence_screening", codes)
@@ -35,7 +35,7 @@ class ChecksTests(unittest.TestCase):
         self.assertIn("invalid_destination_well", codes)
 
     def test_policy_can_escalate_review_to_block(self):
-        package = load_package(ROOT / "examples" / "review_environmental_samples.json")
+        package = load_package(ROOT / "examples" / "environmental_sample_review.json")
         policy = Policy(finding_actions={"missing_biosafety_review": FindingAction.BLOCK_RUN})
         result = scan_package(package, policy)
         self.assertEqual(result.summary.decision, Decision.BLOCK)

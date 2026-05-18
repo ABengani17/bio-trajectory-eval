@@ -16,7 +16,7 @@ class CliTests(unittest.TestCase):
     def test_validate_prints_manifest_summary(self):
         output = StringIO()
         with redirect_stdout(output):
-            cmd_validate(Namespace(manifest=str(ROOT / "examples" / "pass_inert_opentrons.json")))
+            cmd_validate(Namespace(manifest=str(ROOT / "examples" / "inert_dye_run.json")))
         text = output.getvalue()
         self.assertIn("validated pkg_inert_001", text)
         self.assertIn("platform: opentrons", text)
@@ -25,7 +25,7 @@ class CliTests(unittest.TestCase):
         with tempfile.NamedTemporaryFile("w+", encoding="utf-8", suffix=".json") as handle:
             cmd_scan(
                 Namespace(
-                    manifest=str(ROOT / "examples" / "block_construct_missing_screening.json"),
+                    manifest=str(ROOT / "examples" / "construct_screening_hold.json"),
                     opentrons_protocol=None,
                     policy=None,
                     out=handle.name,
@@ -43,7 +43,7 @@ class CliTests(unittest.TestCase):
         with redirect_stdout(output):
             cmd_gate(
                 Namespace(
-                    manifest=str(ROOT / "examples" / "pass_inert_opentrons.json"),
+                    manifest=str(ROOT / "examples" / "inert_dye_run.json"),
                     policy=str(ROOT / "examples" / "policy_default.json"),
                     audit_log=None,
                     fail_on_review=False,

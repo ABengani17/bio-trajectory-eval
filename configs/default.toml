@@ -1,2 +1,2 @@
-default_manifest = "examples/pass_inert_opentrons.json"
+default_manifest = "examples/inert_dye_run.json"
 output_dir = "results"

@@ -1,45 +1,25 @@
 # Methodology
 
-`bio-trajectory-eval` treats a lab automation run as a package that should not be scheduled until key biosecurity and operations records are present.
-
-The scanner is rule-based and policy-driven. It reads a manifest, optionally extracts Opentrons protocol metadata, and emits findings with stable codes, severity, location, message, and recommendation. In labbench workflows, the scanner is exposed as `BiosecurityGate`, a virtual device that can run before instruments are opened.
+The scanner is rule-based. It loads a manifest, optionally merges Opentrons protocol metadata, runs checks, and returns findings with stable `code` values and severities.
 
 ## Inputs
 
-The manifest captures:
-
-- automation platform
-- protocol metadata
-- samples and material types
-- provenance and screening records
-- biosafety and approval identifiers
-- transfers
-- controls
-- decontamination plan
-
-This is intentionally close to fields that already exist in LIMS, request forms, inventory systems, Opentrons protocol metadata, Autoprotocol descriptions, and worklist exports.
+Manifest fields mirror data that often already exists in LIMS, request forms, inventory, and protocol exports: platform, samples, transfers, controls, approvals, and decontamination plan.
 
 ## Policy
 
-The same manifest can be acceptable in one context and blocked in another. The policy file captures local choices such as:
-
-- whether unknown materials block or route to review
-- which material types require sequence-screening records
-- which material types require biosafety review
-- whether missing biosafety review is a high finding or a hard block
-- transfer-count and transfer-volume thresholds
-- labware geometry used for well validation
+The same manifest can pass under one policy and block under another. Policy JSON sets material lists, thresholds, labware geometry, and optional `finding_actions` overrides.
 
 ## Decisions
 
-`pass` means no medium, high, or critical findings were detected.
-
-`review` means the package has medium or high findings that need human review before scheduling.
-
-`block` means at least one critical finding is present. Current critical findings include missing screening records for synthetic DNA or controlled constructs and missing biosafety review for unknown materials.
+| Decision | Rule |
+| --- | --- |
+| `pass` | No medium, high, or critical findings (and no policy override to review/block) |
+| `review` | Medium or high findings, or a `require_review` override |
+| `block` | Critical findings, or a `block_run` override |
 
 ## Scope
 
-The scanner checks metadata readiness. It does not screen sequences, execute protocol code, simulate liquid handling, or make scientific validity decisions.
+Metadata readiness only. No sequence analysis, protocol execution, or liquid-handling simulation.
 
-The useful deployment pattern is to run the gate as part of automation orchestration: if it passes, the automation script can proceed; if it returns review or block, scheduling is stopped or routed to a reviewer with an audit record.
+Typical use: call `BiosecurityGate` from a labbench Rack before scheduling; stop or route to a reviewer when the decision is not `pass`.

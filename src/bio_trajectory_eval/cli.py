@@ -51,6 +51,7 @@ def cmd_report(args: argparse.Namespace) -> None:
     summary = result["summary"]
     print(f"package:  {summary['package_id']}")
     print(f"platform: {summary['platform']}")
+    print(f"policy:   {summary['policy_name']}")
     print(f"decision: {summary['decision']}")
     print(
         "findings: "
@@ -117,14 +118,14 @@ def build_parser() -> argparse.ArgumentParser:
     validate.add_argument("--manifest", required=True)
     validate.set_defaults(func=cmd_validate)
 
-    scan = subparsers.add_parser("scan", help="run biosecurity preflight checks")
+    scan = subparsers.add_parser("scan", help="run manifest checks against a policy")
     scan.add_argument("--manifest", required=True)
     scan.add_argument("--policy")
     scan.add_argument("--opentrons-protocol", help="optional Opentrons Python protocol to read metadata from")
     scan.add_argument("--out")
     scan.set_defaults(func=cmd_scan)
 
-    gate = subparsers.add_parser("gate", help="run as a labbench-compatible preflight gate")
+    gate = subparsers.add_parser("gate", help="run BiosecurityGate (labbench device)")
     gate.add_argument("--manifest", required=True)
     gate.add_argument("--policy")
     gate.add_argument("--audit-log")

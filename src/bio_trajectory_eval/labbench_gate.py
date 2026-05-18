@@ -16,12 +16,7 @@ BaseDevice = lb.Device if lb is not None else object
 
 
 class BiosecurityGate(BaseDevice):
-    """labbench-compatible preflight gate for automation packages.
-
-    Use this as a virtual device in a labbench Rack before opening instruments
-    or scheduling a liquid-handler run. It performs local metadata checks and
-    can fail closed on block decisions.
-    """
+    """labbench Device that scans an automation package manifest before a run."""
 
     def __init__(
         self,

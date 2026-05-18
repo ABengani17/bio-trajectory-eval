@@ -1,18 +1,15 @@
-# Data
+# data
 
-The scanner reads a package manifest: a JSON file that describes the automation platform, protocol metadata, samples, transfers, controls, approvals, and decontamination plan.
-
-The current examples live in `examples/`:
+This directory is reserved for local manifests and scan results. Example packages live under `examples/`:
 
 ```text
-pass_inert_opentrons.json
-review_environmental_samples.json
-block_construct_missing_screening.json
-opentrons_demo_protocol.py
+examples/inert_dye_run.json
+examples/environmental_sample_review.json
+examples/construct_screening_hold.json
 ```
 
-Run:
+Quick scan:
 
 ```bash
-bio-trajectory-eval scan --manifest examples/block_construct_missing_screening.json
+bio-trajectory-eval scan --manifest examples/construct_screening_hold.json
 ```

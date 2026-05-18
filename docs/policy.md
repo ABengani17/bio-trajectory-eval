@@ -1,4 +1,4 @@
-# Checks
+# Policy and findings
 
 Findings have five fields:
 

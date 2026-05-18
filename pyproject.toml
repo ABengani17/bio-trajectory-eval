@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "bio-trajectory-eval"
 version = "0.1.0"
-description = "Biosecurity preflight scanner for lab automation packages."
+description = "labbench pre-run manifest checks for automation packages."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

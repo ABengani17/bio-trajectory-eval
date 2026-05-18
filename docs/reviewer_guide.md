@@ -1,18 +1,16 @@
-# Reviewer Guide
-
-Start with:
+# Reviewer guide
 
 ```bash
 bio-trajectory-eval report --in results/scan.json
 ```
 
-Review blocked packages first, then review packages with high findings.
+Work blocked packages first, then packages with high-severity findings.
 
-For each finding, check:
+For each finding:
 
-- whether the referenced manifest path is correct
-- whether the missing record exists in a source system but was not exported
-- whether the package should be fixed, routed to biosafety review, or rejected
-- whether the finding code should become a local policy rule
+1. Confirm the manifest path is correct.
+2. Check whether the record exists upstream but was not exported.
+3. Decide whether to fix the manifest, escalate review, or reject the run.
+4. Consider adding a `finding_actions` entry in local policy if the code should always block or always review.
 
-The scanner is intentionally conservative about missing records. If a sample has biological or unknown material and no provenance, screening, approval, or biosafety metadata, the package should not silently move into automation scheduling.
+Missing provenance, screening, approval, or biosafety fields on biological or unknown samples should not reach scheduling without an explicit review path.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
@@ -128,11 +129,13 @@ class ScanSummary(BaseModel):
 
     package_id: str
     platform: Platform
+    policy_name: str
     decision: Decision
     finding_count: int
     critical_count: int
     high_count: int
     medium_count: int
+    checked_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 class ScanResult(BaseModel):

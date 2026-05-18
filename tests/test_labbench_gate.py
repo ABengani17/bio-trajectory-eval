@@ -14,7 +14,7 @@ class LabbenchGateTests(unittest.TestCase):
     def test_gate_passes_and_writes_audit_log(self):
         with tempfile.NamedTemporaryFile("r", encoding="utf-8", suffix=".jsonl") as handle:
             gate = BiosecurityGate(audit_log=handle.name)
-            result = gate.assert_clearance(ROOT / "examples" / "pass_inert_opentrons.json")
+            result = gate.assert_clearance(ROOT / "examples" / "inert_dye_run.json")
             self.assertEqual(result.summary.decision, Decision.PASS)
             handle.seek(0)
             self.assertIn("pkg_inert_001", handle.read())
@@ -22,7 +22,7 @@ class LabbenchGateTests(unittest.TestCase):
     def test_gate_fails_closed_on_block(self):
         gate = BiosecurityGate()
         with self.assertRaises(RuntimeError):
-            gate.assert_clearance(ROOT / "examples" / "block_construct_missing_screening.json")
+            gate.assert_clearance(ROOT / "examples" / "construct_screening_hold.json")
 
 
 if __name__ == "__main__":

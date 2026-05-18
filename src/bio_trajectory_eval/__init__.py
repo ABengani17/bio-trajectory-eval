@@ -1,4 +1,4 @@
-"""Biosecurity preflight checks for lab automation packages."""
+"""Pre-run manifest checks for labbench automation packages."""
 
 __all__ = [
     "checks",
