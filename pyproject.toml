@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "bio-trajectory-eval"
 version = "0.1.0"
-description = "labbench pre-run manifest checks for automation packages."
+description = "labbench pre-run audit for automation packages: screening IDs, approvals, provenance, and transfer checks."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

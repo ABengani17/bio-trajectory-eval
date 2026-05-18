@@ -109,14 +109,24 @@ def _scan_samples(package: AutomationPackage, policy: Policy) -> list[Finding]:
                 )
             )
         if sample.material_type in set(policy.require_sequence_screening_for):
-            if sample.screening_status != ScreeningStatus.PASSED or not sample.screening_record_id:
+            if sample.screening_status == ScreeningStatus.PENDING:
+                findings.append(
+                    finding(
+                        "sequence_screening_pending",
+                        Severity.HIGH,
+                        f"{path}.screening_status",
+                        f"Sample {sample.id} has screening in progress.",
+                        "Wait for the screening provider result or attach screening_record_id when passed.",
+                    )
+                )
+            elif sample.screening_status != ScreeningStatus.PASSED or not sample.screening_record_id:
                 findings.append(
                     finding(
                         "missing_sequence_screening",
                         Severity.CRITICAL if policy.block_on_missing_sequence_screening else Severity.HIGH,
                         f"{path}.screening_status",
                         f"Sample {sample.id} requires a passed screening record.",
-                        "Attach screening status and record ID before the package can be released.",
+                        "Attach screening status, screening_record_id, and screening_provider (e.g. IGSC vendor ID, commec run ID) before release.",
                     )
                 )
             if not sample.approval_id:

@@ -6,7 +6,16 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from bio_trajectory_eval.checks import scan_package
-from bio_trajectory_eval.schema import Decision, FindingAction, Policy, load_package
+from bio_trajectory_eval.schema import (
+    Decision,
+    FindingAction,
+    MaterialType,
+    Policy,
+    Sample,
+    ScreeningStatus,
+    load_package,
+)
+from bio_trajectory_eval.schema import AutomationPackage, Platform
 
 
 class ChecksTests(unittest.TestCase):
@@ -33,6 +42,26 @@ class ChecksTests(unittest.TestCase):
         self.assertIn("missing_sequence_screening", codes)
         self.assertIn("missing_construct_approval", codes)
         self.assertIn("invalid_destination_well", codes)
+
+    def test_pending_screening_routes_to_review(self):
+        package = AutomationPackage(
+            id="pkg_pending",
+            name="Pending screening",
+            platform=Platform.OPENTRONS,
+            samples=[
+                Sample(
+                    id="oligo_1",
+                    name="Ordered oligo",
+                    material_type=MaterialType.SYNTHETIC_DNA,
+                    screening_status=ScreeningStatus.PENDING,
+                    screening_record_id="",
+                )
+            ],
+        )
+        result = scan_package(package)
+        codes = {finding.code for finding in result.findings}
+        self.assertEqual(result.summary.decision, Decision.REVIEW)
+        self.assertIn("sequence_screening_pending", codes)
 
     def test_policy_can_escalate_review_to_block(self):
         package = load_package(ROOT / "examples" / "environmental_sample_review.json")

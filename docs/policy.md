@@ -40,6 +40,7 @@ Important finding codes:
 
 ```text
 missing_sequence_screening
+sequence_screening_pending
 missing_construct_approval
 missing_biosafety_review
 missing_bsl_approval

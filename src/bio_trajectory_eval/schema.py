@@ -66,6 +66,7 @@ class Sample(BaseModel):
     provenance_id: str = ""
     screening_status: ScreeningStatus = ScreeningStatus.NOT_REQUIRED
     screening_record_id: str = ""
+    screening_provider: str = ""
     approval_id: str = ""
     biosafety_review_id: str = ""
     biosafety_level: int = Field(default=1, ge=1, le=4)
@@ -95,6 +96,8 @@ class AutomationPackage(BaseModel):
 
     id: str = Field(pattern=r"^[A-Za-z0-9_.-]+$")
     name: str = Field(min_length=1)
+    requester: str = ""
+    project_id: str = ""
     platform: Platform
     protocol_file: str = ""
     metadata: ProtocolMetadata = Field(default_factory=ProtocolMetadata)

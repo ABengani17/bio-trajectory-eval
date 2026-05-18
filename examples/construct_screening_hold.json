@@ -17,6 +17,7 @@
       "provenance_id": "vendor-order-17",
       "screening_status": "missing",
       "screening_record_id": "",
+      "screening_provider": "",
       "approval_id": "",
       "biosafety_level": 1,
       "external": true
