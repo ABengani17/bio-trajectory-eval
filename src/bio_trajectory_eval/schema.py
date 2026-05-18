@@ -49,6 +49,12 @@ class Decision(StrEnum):
     BLOCK = "block"
 
 
+class FindingAction(StrEnum):
+    RECORD_ONLY = "record_only"
+    REQUIRE_REVIEW = "require_review"
+    BLOCK_RUN = "block_run"
+
+
 class Sample(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -136,6 +142,44 @@ class ScanResult(BaseModel):
     findings: list[Finding]
 
 
+class LabwareRule(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1)
+    rows: str = "ABCDEFGH"
+    columns: int = Field(default=12, ge=1, le=48)
+    max_well_volume_ul: float | None = Field(default=None, gt=0)
+
+
+class Policy(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = "default"
+    require_opentrons_api_level: bool = True
+    require_protocol_name: bool = True
+    require_controls_for_biological_materials: bool = True
+    require_decontamination_for_biological_materials: bool = True
+    require_provenance_for_external_materials: bool = True
+    require_sequence_screening_for: list[MaterialType] = Field(
+        default_factory=lambda: [MaterialType.SYNTHETIC_DNA, MaterialType.CONTROLLED_CONSTRUCT]
+    )
+    require_biosafety_review_for: list[MaterialType] = Field(
+        default_factory=lambda: [
+            MaterialType.ORGANISM,
+            MaterialType.CELL_LINE,
+            MaterialType.CLINICAL_SAMPLE,
+            MaterialType.ENVIRONMENTAL_SAMPLE,
+            MaterialType.UNKNOWN,
+        ]
+    )
+    block_on_unknown_material: bool = False
+    block_on_missing_sequence_screening: bool = True
+    max_transfer_ul_without_review: float = Field(default=1000, gt=0)
+    high_throughput_transfer_count: int = Field(default=96, ge=1)
+    default_labware: LabwareRule = Field(default_factory=lambda: LabwareRule(name="96_well_plate"))
+    finding_actions: dict[str, FindingAction] = Field(default_factory=dict)
+
+
 def load_package(path: str | Path) -> AutomationPackage:
     with Path(path).open("r", encoding="utf-8") as handle:
         raw: dict[str, Any] = json.load(handle)
@@ -143,6 +187,17 @@ def load_package(path: str | Path) -> AutomationPackage:
         return AutomationPackage.model_validate(raw)
     except Exception as exc:
         raise ValueError(f"invalid automation package {path}: {exc}") from exc
+
+
+def load_policy(path: str | Path | None = None) -> Policy:
+    if path is None:
+        return Policy()
+    with Path(path).open("r", encoding="utf-8") as handle:
+        raw: dict[str, Any] = json.load(handle)
+    try:
+        return Policy.model_validate(raw)
+    except Exception as exc:
+        raise ValueError(f"invalid policy {path}: {exc}") from exc
 
 
 def dump_json(data: BaseModel) -> str:

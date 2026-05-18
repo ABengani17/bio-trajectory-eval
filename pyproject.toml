@@ -9,6 +9,7 @@ description = "Biosecurity preflight scanner for lab automation packages."
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "labbench>=0.45,<0.46",
     "pydantic>=2.7",
     "tomli>=2.0; python_version < '3.11'",
 ]

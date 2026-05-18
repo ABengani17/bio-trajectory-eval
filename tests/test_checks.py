@@ -6,7 +6,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from bio_trajectory_eval.checks import scan_package
-from bio_trajectory_eval.schema import Decision, load_package
+from bio_trajectory_eval.schema import Decision, FindingAction, Policy, load_package
 
 
 class ChecksTests(unittest.TestCase):
@@ -33,6 +33,12 @@ class ChecksTests(unittest.TestCase):
         self.assertIn("missing_sequence_screening", codes)
         self.assertIn("missing_construct_approval", codes)
         self.assertIn("invalid_destination_well", codes)
+
+    def test_policy_can_escalate_review_to_block(self):
+        package = load_package(ROOT / "examples" / "review_environmental_samples.json")
+        policy = Policy(finding_actions={"missing_biosafety_review": FindingAction.BLOCK_RUN})
+        result = scan_package(package, policy)
+        self.assertEqual(result.summary.decision, Decision.BLOCK)
 
 
 if __name__ == "__main__":

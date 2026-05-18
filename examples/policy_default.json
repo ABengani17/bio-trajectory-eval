@@ -1,0 +1,30 @@
+{
+  "name": "default_biosecurity_gate",
+  "require_opentrons_api_level": true,
+  "require_protocol_name": true,
+  "require_controls_for_biological_materials": true,
+  "require_decontamination_for_biological_materials": true,
+  "require_provenance_for_external_materials": true,
+  "require_sequence_screening_for": [
+    "synthetic_dna",
+    "controlled_construct"
+  ],
+  "require_biosafety_review_for": [
+    "organism",
+    "cell_line",
+    "clinical_sample",
+    "environmental_sample",
+    "unknown"
+  ],
+  "block_on_unknown_material": false,
+  "block_on_missing_sequence_screening": true,
+  "max_transfer_ul_without_review": 1000,
+  "high_throughput_transfer_count": 96,
+  "default_labware": {
+    "name": "96_well_plate",
+    "rows": "ABCDEFGH",
+    "columns": 12,
+    "max_well_volume_ul": 360
+  },
+  "finding_actions": {}
+}

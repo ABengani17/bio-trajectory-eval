@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import argparse
 import json
+from contextlib import nullcontext
 from pathlib import Path
 
 from bio_trajectory_eval.checks import scan_package
 from bio_trajectory_eval.opentrons import read_opentrons_metadata
-from bio_trajectory_eval.schema import AutomationPackage, dump_json, load_package
+from bio_trajectory_eval.labbench_gate import BiosecurityGate
+from bio_trajectory_eval.schema import AutomationPackage, dump_json, load_package, load_policy
 
 
 def cmd_scan(args: argparse.Namespace) -> None:
@@ -15,7 +17,7 @@ def cmd_scan(args: argparse.Namespace) -> None:
         metadata = read_opentrons_metadata(args.opentrons_protocol)
         package = package.model_copy(update={"metadata": metadata, "protocol_file": args.opentrons_protocol})
 
-    result = scan_package(package)
+    result = scan_package(package, load_policy(args.policy))
     output = dump_json(result)
     if args.out:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
@@ -30,6 +32,17 @@ def cmd_validate(args: argparse.Namespace) -> None:
     print(f"platform: {package.platform.value}")
     print(f"samples: {len(package.samples)}")
     print(f"transfers: {len(package.transfers)}")
+
+
+def cmd_gate(args: argparse.Namespace) -> None:
+    gate = BiosecurityGate(
+        policy_path=args.policy,
+        audit_log=args.audit_log,
+        fail_on_review=args.fail_on_review,
+    )
+    with gate if hasattr(gate, "__enter__") else nullcontext(gate):
+        result = gate.assert_clearance(args.manifest)
+    print(dump_json(result))
 
 
 def cmd_report(args: argparse.Namespace) -> None:
@@ -106,9 +119,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     scan = subparsers.add_parser("scan", help="run biosecurity preflight checks")
     scan.add_argument("--manifest", required=True)
+    scan.add_argument("--policy")
     scan.add_argument("--opentrons-protocol", help="optional Opentrons Python protocol to read metadata from")
     scan.add_argument("--out")
     scan.set_defaults(func=cmd_scan)
+
+    gate = subparsers.add_parser("gate", help="run as a labbench-compatible preflight gate")
+    gate.add_argument("--manifest", required=True)
+    gate.add_argument("--policy")
+    gate.add_argument("--audit-log")
+    gate.add_argument("--fail-on-review", action="store_true")
+    gate.set_defaults(func=cmd_gate)
 
     report = subparsers.add_parser("report", help="print a human-readable scan report")
     report.add_argument("--in", dest="input", required=True)

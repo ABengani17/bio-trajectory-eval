@@ -28,6 +28,14 @@ high/medium present   review
 only low/info/none    pass
 ```
 
+Policies can override this for specific finding codes with:
+
+```text
+record_only
+require_review
+block_run
+```
+
 Important finding codes:
 
 ```text
@@ -47,3 +55,5 @@ reused_destination_well
 missing_opentrons_api_level
 missing_protocol_name
 ```
+
+Policy-sensitive checks include unknown material handling, sequence-screening requirements, biosafety-review requirements, transfer-volume threshold, high-throughput threshold, and labware geometry.
